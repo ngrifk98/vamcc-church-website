@@ -34,35 +34,35 @@ A modern Progressive Web App (PWA) for VAMCC - a Tamil American Catholic communi
 - Upcoming events display
 - Stores member data securely in PostgreSQL
 
-## Gallery - Member Registration Chatbot
+## Gallery - Church Website & Chatbot Feature
 
-### Chatbot Welcome Screen
-![Chatbot Welcome](./screenshots/01-chatbot-welcome.jpg)
-Initial chatbot interface with two options: member registration and events.
+### Home Page - iOS Welcome Version
+![Homepage iOS](./screenshots/01-homepage-ios-welcome.jpg)
+Responsive iOS mobile version of the church homepage welcome screen.
 
-### Member Registration Form
-![Member Registration](./screenshots/02-member-registration.jpg)
-Multi-step registration form collecting member information.
+### Home Page - Desktop Widescreen
+![Homepage Desktop](./screenshots/02-homepage-desktop-widescreen.jpg)
+Full widescreen desktop version of the homepage showing complete layout and features.
 
-### Registration Form (Filled)
-![Registration Filled](./screenshots/03-registration-form-filled.jpg)
-Completed registration form with all member details entered.
+### Database - pgAdmin Logs
+![pgAdmin Logs](./screenshots/03-pgadmin-database-logs.jpg)
+PostgreSQL database logs and activity captured in pgAdmin management console.
 
-### Duplicate Phone Detection
-![Duplicate Detection](./screenshots/04-duplicate-detection.jpg)
-Alert when duplicate phone number is detected, offering to update existing record.
+### Database - Activity Monitor
+![Database Activity](./screenshots/04-database-activity.jpg)
+Real-time database activity and query monitoring dashboard.
 
-### Upcoming Events Display
-![Events Display](./screenshots/05-events-display.jpg)
-Chatbot showing upcoming church events with dates and descriptions.
+### Chatbot - Menu Options
+![Chatbot Menu](./screenshots/05-chatbot-menu-options.jpg)
+Virtual chatbot interface displaying two main options: member registration and upcoming events.
 
-### Update Member Form
-![Update Form](./screenshots/06-update-form.jpg)
-Form to update existing member information with pre-filled data.
+### Chatbot - Member Registration Form
+![Member Registration](./screenshots/06-member-registration-form.jpg)
+Chatbot member registration form collecting full name, phone, email, date of birth, and parish information.
 
-### Success Confirmation
-![Success Message](./screenshots/07-success-message.jpg)
-Confirmation message after successful member registration.
+### Chatbot - Upcoming Events
+![Events Display](./screenshots/07-upcoming-events.jpg)
+Chatbot showing list of 10 upcoming church events with dates, times, and descriptions.
 
 ## Technology Stack
 
