@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 // Stack: React (frontend) | Node.js/Express + PostgreSQL (backend)
 // ============================================================
 
-const PAGES = { HOME: "home", REGISTER: "register", LOGIN: "login", PROFILE: "profile" };
+const PAGES = { HOME: "home", REGISTER: "register", LOGIN: "login", PROFILE: "profile", CHATBOT: "chatbot", CHATBOT_REGISTER: "chatbot-register", CHATBOT_EVENTS: "chatbot-events", CHATBOT_UPDATE: "chatbot-update" };
 
 // ── Fake auth state (replace with real API calls) ──────────────
 function useAuth() {
@@ -261,6 +261,25 @@ const styles = `
   .profile-actions { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
   .badge { display: inline-block; background: rgba(201,149,42,0.12); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.3rem 0.75rem; border-radius: 100px; border: 1px solid rgba(201,149,42,0.3); }
 
+  /* CHATBOT */
+  .chatbot-page { min-height: 100vh; background: linear-gradient(135deg, var(--cream) 0%, #EDE5D4 100%); display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .chatbot-card { background: var(--white); border: 2px solid var(--gold); border-radius: 8px; padding: 3rem 2.5rem; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(26,18,8,0.15); text-align: center; }
+  .chatbot-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--brown); margin-bottom: 1rem; }
+  .chatbot-greeting { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+  .chatbot-button { width: 100%; padding: 1.2rem; margin-bottom: 1rem; background: var(--gold); color: var(--deep); border: none; cursor: pointer; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px; transition: background 0.2s, transform 0.15s; }
+  .chatbot-button:hover { background: var(--gold-light); transform: translateY(-2px); }
+  .chatbot-back { margin-top: 2rem; }
+  .back-btn { background: none; border: 1.5px solid var(--muted); color: var(--muted); cursor: pointer; font-family: 'Lato', sans-serif; font-size: 0.85rem; letter-spacing: 0.1em; padding: 0.6rem 1.5rem; border-radius: 4px; transition: border-color 0.2s, color 0.2s; }
+  .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .events-list { text-align: left; }
+  .event-item { background: #F9F7F4; border-left: 3px solid var(--gold); padding: 1.2rem; margin-bottom: 1rem; border-radius: 4px; }
+  .event-title { font-family: 'Playfair Display', serif; color: var(--brown); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 700; }
+  .event-datetime { font-size: 0.85rem; color: var(--gold); margin-bottom: 0.4rem; }
+  .event-description { font-size: 0.85rem; color: var(--muted); }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  textarea { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #E0D5C5; border-radius: 2px; font-family: 'Lato', sans-serif; font-size: 0.95rem; color: var(--text); background: #FDFAF6; resize: vertical; min-height: 80px; }
+  textarea:focus { border-color: var(--gold); outline: none; }
+
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -281,6 +300,7 @@ function Nav({ page, setPage, user, logout }) {
       <div className="nav-brand" onClick={() => setPage(PAGES.HOME)}>✝ VAMCC</div>
       <div className="nav-links">
         <button className={`nav-btn ${page === PAGES.HOME ? "active" : ""}`} onClick={() => setPage(PAGES.HOME)}>Home</button>
+        <button className={`nav-btn ${[PAGES.CHATBOT, PAGES.CHATBOT_REGISTER, PAGES.CHATBOT_EVENTS, PAGES.CHATBOT_UPDATE].includes(page) ? "active" : ""}`} onClick={() => setPage(PAGES.CHATBOT)}>Chat</button>
         {user ? (
           <>
             <button className={`nav-btn ${page === PAGES.PROFILE ? "active" : ""}`} onClick={() => setPage(PAGES.PROFILE)}>My Profile</button>
@@ -488,9 +508,261 @@ function ProfilePage({ user, setPage }) {
   );
 }
 
+// ── Chatbot Components ──────────────────────────────────
+
+function ChatbotPage({ setPage }) {
+  return (
+    <div className="chatbot-page">
+      <div className="chatbot-card fade-in">
+        <div className="chatbot-title">Welcome! How can we help?</div>
+        <p className="chatbot-greeting">Welcome to VAMCC! We're here to make it easy for you to connect with our church community.</p>
+        <button className="chatbot-button" onClick={() => setPage(PAGES.CHATBOT_REGISTER)}>📋 Register as a Church Member</button>
+        <button className="chatbot-button" onClick={() => setPage(PAGES.CHATBOT_EVENTS)}>📅 View Upcoming Events</button>
+        <div className="chatbot-back">
+          <button className="back-btn" onClick={() => setPage(PAGES.HOME)}>← Back to Home</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatbotMemberRegistration({ setPage, setUpdateMemberID, setDuplicateMemberData }) {
+  const COUNTRY_CODES = ["+1", "+44", "+91", "+81", "+86", "+33", "+39", "+34", "+49", "+61"];
+  const [form, setForm] = useState({
+    fullName: "", countryCode: "+1", phoneNumber: "", email: "",
+    dateOfBirthMonth: "", dateOfBirthDate: "", parishName: "", city: "", state: ""
+  });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [duplicateMemberID, setDuplicateMemberID] = useState(null);
+
+  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const submit = async () => {
+    setError(""); setSuccess(false);
+    if (!form.fullName || !form.phoneNumber || !form.email) {
+      setError("Full Name, Phone Number, and Email are required.");
+      return;
+    }
+    if (form.dateOfBirthMonth < 1 || form.dateOfBirthMonth > 12 || form.dateOfBirthDate < 1 || form.dateOfBirthDate > 31) {
+      setError("Please enter a valid month (1-12) and date (1-31).");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:4000/api/members/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      const data = await response.json();
+      if (response.status === 409) {
+        setIsDuplicate(true);
+        setDuplicateMemberID(data.memberID);
+        setError(data.error);
+        // Fetch the full member data for update form
+        const memberResponse = await fetch(`http://localhost:4000/api/members/by-phone?countryCode=${encodeURIComponent(form.countryCode)}&phoneNumber=${encodeURIComponent(form.phoneNumber)}`);
+        if (memberResponse.ok) {
+          const memberData = await memberResponse.json();
+          setDuplicateMemberData(memberData);
+        }
+      } else if (response.ok) {
+        setSuccess(true);
+        setForm({ fullName: "", countryCode: "+1", phoneNumber: "", email: "", dateOfBirthMonth: "", dateOfBirthDate: "", parishName: "", city: "", state: "" });
+        setTimeout(() => setPage(PAGES.CHATBOT), 2000);
+      } else {
+        setError(data.error || "Registration failed.");
+      }
+    } catch (err) {
+      setError("Connection error. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleUpdateRecord = () => {
+    setUpdateMemberID(duplicateMemberID);
+    setPage(PAGES.CHATBOT_UPDATE);
+  };
+
+  if (isDuplicate) {
+    return (
+      <div className="chatbot-page">
+        <div className="chatbot-card fade-in">
+          <div className="chatbot-title">Hold On! 📞</div>
+          <div className="alert error">{error}</div>
+          <p className="chatbot-greeting">We found an existing record with this phone number. Would you like to update your information?</p>
+          <button className="chatbot-button" onClick={handleUpdateRecord}>Yes, Update My Record</button>
+          <button className="chatbot-button" style={{ background: "var(--muted)" }} onClick={() => { setIsDuplicate(false); setError(""); setForm({ fullName: "", countryCode: "+1", phoneNumber: "", email: "", dateOfBirthMonth: "", dateOfBirthDate: "", parishName: "", city: "", state: "" }); }}>No, Try Different Number</button>
+          <div className="chatbot-back">
+            <button className="back-btn" onClick={() => setPage(PAGES.CHATBOT)}>← Back</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chatbot-page">
+      <div className="form-card fade-in">
+        <div className="form-title">Member Registration</div>
+        <div className="form-sub">We'd love to know more about you!</div>
+        {error && <div className="alert error">{error}</div>}
+        {success && <div className="alert success">✓ Welcome to our church family!</div>}
+
+        <div className="form-group"><label>Full Name of Head of Household *</label><input name="fullName" value={form.fullName} onChange={handle} placeholder="John Smith" /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>Country Code *</label><select name="countryCode" value={form.countryCode} onChange={handle}>{COUNTRY_CODES.map(cc => <option key={cc} value={cc}>{cc}</option>)}</select></div>
+          <div className="form-group"><label>Phone Number *</label><input name="phoneNumber" value={form.phoneNumber} onChange={handle} placeholder="555-123-4567" /></div>
+        </div>
+
+        <div className="form-group"><label>Email Address *</label><input name="email" type="email" value={form.email} onChange={handle} placeholder="john@example.com" /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>Date of Birth Month (1-12) *</label><input name="dateOfBirthMonth" type="number" min="1" max="12" value={form.dateOfBirthMonth} onChange={handle} placeholder="3" /></div>
+          <div className="form-group"><label>Date (1-31) *</label><input name="dateOfBirthDate" type="number" min="1" max="31" value={form.dateOfBirthDate} onChange={handle} placeholder="15" /></div>
+        </div>
+
+        <div className="form-group"><label>Parish Name (Optional)</label><input name="parishName" value={form.parishName} onChange={handle} placeholder="St. Mary's" /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>City (Optional)</label><input name="city" value={form.city} onChange={handle} placeholder="Dallas" /></div>
+          <div className="form-group"><label>State (Optional)</label><input name="state" value={form.state} onChange={handle} placeholder="TX" /></div>
+        </div>
+
+        <button className="form-btn" onClick={submit} disabled={loading}>{loading ? "Registering…" : "Submit Registration"}</button>
+        <div className="form-switch"><button onClick={() => { setPage(PAGES.CHATBOT); setError(""); }}>← Back</button></div>
+      </div>
+    </div>
+  );
+}
+
+function UpdateMemberForm({ memberID, memberData, setPage }) {
+  const COUNTRY_CODES = ["+1", "+44", "+91", "+81", "+86", "+33", "+39", "+34", "+49", "+61"];
+  const [form, setForm] = useState(memberData || null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const submit = async () => {
+    if (!form.fullName || !form.phoneNumber || !form.email) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`http://localhost:4000/api/members/${form.memberid}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (response.ok) {
+        setSuccess(true);
+        setTimeout(() => setPage(PAGES.CHATBOT), 2000);
+      } else {
+        const data = await response.json();
+        setError(data.error || "Update failed.");
+      }
+    } catch (err) {
+      setError("Connection error.");
+    }
+    setSaving(false);
+  };
+
+  if (!form) return <div className="chatbot-page"><div className="chatbot-card">Loading...</div></div>;
+
+  return (
+    <div className="chatbot-page">
+      <div className="form-card fade-in">
+        <div className="form-title">Update Your Information</div>
+        <div className="form-sub">Make any changes to your member record.</div>
+        {error && <div className="alert error">{error}</div>}
+        {success && <div className="alert success">✓ Your information has been updated!</div>}
+
+        <div className="form-group"><label>Full Name *</label><input name="fullName" value={form.fullName} onChange={handle} /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>Country Code *</label><select name="countryCode" value={form.countryCode} onChange={handle}>{COUNTRY_CODES.map(cc => <option key={cc} value={cc}>{cc}</option>)}</select></div>
+          <div className="form-group"><label>Phone Number *</label><input name="phoneNumber" value={form.phoneNumber} onChange={handle} /></div>
+        </div>
+
+        <div className="form-group"><label>Email Address *</label><input name="email" type="email" value={form.email} onChange={handle} /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>Date of Birth Month (1-12) *</label><input name="dateOfBirthMonth" type="number" min="1" max="12" value={form.dateOfBirthMonth || ""} onChange={handle} /></div>
+          <div className="form-group"><label>Date (1-31) *</label><input name="dateOfBirthDate" type="number" min="1" max="31" value={form.dateOfBirthDate || ""} onChange={handle} /></div>
+        </div>
+
+        <div className="form-group"><label>Parish Name (Optional)</label><input name="parishName" value={form.parishName || ""} onChange={handle} /></div>
+
+        <div className="form-row">
+          <div className="form-group"><label>City (Optional)</label><input name="city" value={form.city || ""} onChange={handle} /></div>
+          <div className="form-group"><label>State (Optional)</label><input name="state" value={form.state || ""} onChange={handle} /></div>
+        </div>
+
+        <button className="form-btn" onClick={submit} disabled={saving}>{saving ? "Updating…" : "Save Changes"}</button>
+        <div className="form-switch"><button onClick={() => setPage(PAGES.CHATBOT)}>← Back</button></div>
+      </div>
+    </div>
+  );
+}
+
+function ChatbotEvents({ setPage }) {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/api/events");
+        if (response.ok) {
+          setEvents(await response.json());
+        } else {
+          setError("Could not load events.");
+        }
+      } catch {
+        setError("Connection error.");
+      }
+      setLoading(false);
+    };
+    fetchEvents();
+  }, []);
+
+  if (loading) return <div className="chatbot-page"><div className="chatbot-card">Loading events...</div></div>;
+  if (error) return <div className="chatbot-page"><div className="chatbot-card"><div className="alert error">{error}</div><button className="back-btn" onClick={() => setPage(PAGES.CHATBOT)}>← Back</button></div></div>;
+
+  return (
+    <div className="chatbot-page">
+      <div className="form-card fade-in" style={{ maxHeight: "80vh", overflowY: "auto" }}>
+        <div className="form-title">📅 Upcoming Events</div>
+        <div className="form-sub">Next 10 events at VAMCC</div>
+        <div className="events-list">
+          {events.map(event => (
+            <div className="event-item" key={event.id}>
+              <div className="event-title">{event.title}</div>
+              <div className="event-datetime">{event.date} at {event.time}</div>
+              <div className="event-description">{event.description}</div>
+            </div>
+          ))}
+        </div>
+        <div className="chatbot-back">
+          <button className="back-btn" onClick={() => setPage(PAGES.CHATBOT)}>← Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState(PAGES.HOME);
+  const [updateMemberID, setUpdateMemberID] = useState(null);
+  const [duplicateMemberData, setDuplicateMemberData] = useState(null);
   const { user, login, register, logout } = useAuth();
 
   useEffect(() => {
@@ -506,6 +778,10 @@ export default function App() {
       {page === PAGES.LOGIN && <LoginPage onLogin={login} setPage={setPage} />}
       {page === PAGES.PROFILE && user && <ProfilePage user={user} setPage={setPage} />}
       {page === PAGES.PROFILE && !user && <LoginPage onLogin={login} setPage={setPage} />}
+      {page === PAGES.CHATBOT && <ChatbotPage setPage={setPage} />}
+      {page === PAGES.CHATBOT_REGISTER && <ChatbotMemberRegistration setPage={setPage} setUpdateMemberID={setUpdateMemberID} setDuplicateMemberData={setDuplicateMemberData} />}
+      {page === PAGES.CHATBOT_EVENTS && <ChatbotEvents setPage={setPage} />}
+      {page === PAGES.CHATBOT_UPDATE && <UpdateMemberForm memberID={updateMemberID} memberData={duplicateMemberData} setPage={setPage} />}
     </>
   );
 }

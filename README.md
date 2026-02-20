@@ -27,6 +27,43 @@ A modern Progressive Web App (PWA) for VAMCC - a Tamil American Catholic communi
 - Smooth animations and transitions
 - Professional typography with Google Fonts
 
+💬 **Member Registration Chatbot** *(New)*
+- Virtual chatbot with member registration flow
+- Duplicate phone number detection
+- View and update existing member records
+- Upcoming events display
+- Stores member data securely in PostgreSQL
+
+## Gallery - Member Registration Chatbot
+
+### Chatbot Welcome Screen
+![Chatbot Welcome](./screenshots/01-chatbot-welcome.jpg)
+Initial chatbot interface with two options: member registration and events.
+
+### Member Registration Form
+![Member Registration](./screenshots/02-member-registration.jpg)
+Multi-step registration form collecting member information.
+
+### Registration Form (Filled)
+![Registration Filled](./screenshots/03-registration-form-filled.jpg)
+Completed registration form with all member details entered.
+
+### Duplicate Phone Detection
+![Duplicate Detection](./screenshots/04-duplicate-detection.jpg)
+Alert when duplicate phone number is detected, offering to update existing record.
+
+### Upcoming Events Display
+![Events Display](./screenshots/05-events-display.jpg)
+Chatbot showing upcoming church events with dates and descriptions.
+
+### Update Member Form
+![Update Form](./screenshots/06-update-form.jpg)
+Form to update existing member information with pre-filled data.
+
+### Success Confirmation
+![Success Message](./screenshots/07-success-message.jpg)
+Confirmation message after successful member registration.
+
 ## Technology Stack
 
 ### Frontend
@@ -145,6 +182,12 @@ Deployed at: `https://ngrifk98.github.io/vamcc-church-website/`
 - `GET /api/members/me` - Get current member profile
 - `PUT /api/members/:id` - Update member profile
 - `GET /api/members` - List all members (admin only)
+
+### Member Registration Chatbot *(New)*
+- `POST /api/members/register` - Register new member via chatbot with duplicate detection
+- `GET /api/members/by-phone` - Get member by country code + phone number
+- `PUT /api/members/:memberID` - Update existing member record
+- `GET /api/events` - Get upcoming church events (10 max)
 
 ### Health Check
 - `GET /api/health` - Server health status

@@ -40,6 +40,24 @@ async function initDB() {
       updated_at  TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tblMember (
+      memberID          SERIAL PRIMARY KEY,
+      fullName          VARCHAR(255) NOT NULL,
+      countryCode       VARCHAR(5) NOT NULL,
+      phoneNumber       VARCHAR(20) NOT NULL,
+      email             VARCHAR(255) NOT NULL,
+      dateOfBirthMonth  INT,
+      dateOfBirthDate   INT,
+      parishName        VARCHAR(255),
+      city              VARCHAR(100),
+      state             VARCHAR(100),
+      createdAt         TIMESTAMP DEFAULT NOW(),
+      updatedAt         TIMESTAMP DEFAULT NOW(),
+      UNIQUE (countryCode, phoneNumber)
+    );
+  `);
   console.log('✅ Database tables ready');
 }
 
@@ -164,6 +182,134 @@ app.get('/api/members', auth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ── Member Registration Chatbot Routes ──────────────
+
+// POST /api/members/register - Register new member via chatbot
+app.post('/api/members/register', async (req, res) => {
+  try {
+    const { fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName, city, state } = req.body;
+
+    // Validation
+    if (!fullName || !countryCode || !phoneNumber || !email)
+      return res.status(400).json({ error: 'Full Name, Country Code, Phone Number, and Email are required' });
+
+    if (dateOfBirthMonth < 1 || dateOfBirthMonth > 12 || dateOfBirthDate < 1 || dateOfBirthDate > 31)
+      return res.status(400).json({ error: 'Invalid date of birth' });
+
+    // Check for duplicate phone number
+    const duplicate = await pool.query(
+      'SELECT memberID FROM tblMember WHERE countryCode = $1 AND phoneNumber = $2',
+      [countryCode, phoneNumber]
+    );
+
+    if (duplicate.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Phone number already exists! Would you like to view and update your record?',
+        memberID: duplicate.rows[0].memberid,
+        isDuplicate: true
+      });
+    }
+
+    // Insert new member
+    const result = await pool.query(
+      `INSERT INTO tblMember (fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName, city, state)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING memberID, fullName, email, countryCode, phoneNumber, dateOfBirthMonth, dateOfBirthDate, parishName, city, state, createdAt`,
+      [fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName || null, city || null, state || null]
+    );
+
+    res.status(201).json({
+      success: true,
+      member: result.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23505') { // UNIQUE constraint violation
+      return res.status(409).json({ error: 'This phone number is already registered' });
+    }
+    res.status(500).json({ error: 'Server error during registration' });
+  }
+});
+
+// GET /api/members/by-phone - Get member by phone number (for update flow)
+app.get('/api/members/by-phone', async (req, res) => {
+  try {
+    const { countryCode, phoneNumber } = req.query;
+
+    if (!countryCode || !phoneNumber)
+      return res.status(400).json({ error: 'Country Code and Phone Number are required' });
+
+    const result = await pool.query(
+      'SELECT memberID, fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName, city, state FROM tblMember WHERE countryCode = $1 AND phoneNumber = $2',
+      [countryCode, phoneNumber]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: 'Member not found' });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PUT /api/members/:memberID - Update existing member
+app.put('/api/members/:memberID', async (req, res) => {
+  try {
+    const { memberID } = req.params;
+    const { fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName, city, state } = req.body;
+
+    if (!fullName || !countryCode || !phoneNumber || !email)
+      return res.status(400).json({ error: 'Full Name, Country Code, Phone Number, and Email are required' });
+
+    // Check if trying to change phone to an existing one (excluding current member)
+    const duplicate = await pool.query(
+      'SELECT memberID FROM tblMember WHERE countryCode = $1 AND phoneNumber = $2 AND memberID != $3',
+      [countryCode, phoneNumber, memberID]
+    );
+
+    if (duplicate.rows.length > 0)
+      return res.status(409).json({ error: 'This phone number is already registered by another member' });
+
+    const result = await pool.query(
+      `UPDATE tblMember
+       SET fullName=$1, countryCode=$2, phoneNumber=$3, email=$4, dateOfBirthMonth=$5, dateOfBirthDate=$6, parishName=$7, city=$8, state=$9, updatedAt=NOW()
+       WHERE memberID=$10
+       RETURNING memberID, fullName, email, countryCode, phoneNumber, dateOfBirthMonth, dateOfBirthDate, parishName, city, state, updatedAt`,
+      [fullName, countryCode, phoneNumber, email, dateOfBirthMonth, dateOfBirthDate, parishName || null, city || null, state || null, memberID]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: 'Member not found' });
+
+    res.json({ success: true, member: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    if (err.code === '23505') { // UNIQUE constraint violation
+      return res.status(409).json({ error: 'This phone number is already registered' });
+    }
+    res.status(500).json({ error: 'Server error during update' });
+  }
+});
+
+// GET /api/events - Get upcoming events (placeholder data)
+app.get('/api/events', (req, res) => {
+  const upcomingEvents = [
+    { id: 1, title: 'Sunday Mass', date: '2026-02-22', time: '10:00 AM', description: 'Weekly Sunday Service' },
+    { id: 2, title: 'Bible Study', date: '2026-02-23', time: '7:00 PM', description: 'Join us for Bible study and discussion' },
+    { id: 3, title: 'Choir Practice', date: '2026-02-24', time: '6:00 PM', description: 'Weekly choir rehearsal' },
+    { id: 4, title: 'Sunday Mass', date: '2026-02-29', time: '10:00 AM', description: 'Weekly Sunday Service' },
+    { id: 5, title: 'Community Outreach', date: '2026-03-01', time: '9:00 AM', description: 'Help serve the community' },
+    { id: 6, title: 'Confession', date: '2026-03-02', time: '4:00 PM', description: 'Sacrament of Reconciliation' },
+    { id: 7, title: 'Young Adults Group', date: '2026-03-03', time: '7:30 PM', description: 'Social gathering for young adults' },
+    { id: 8, title: 'Sunday Mass', date: '2026-03-08', time: '10:00 AM', description: 'Weekly Sunday Service' },
+    { id: 9, title: 'Prayer Circle', date: '2026-03-09', time: '6:00 PM', description: 'Evening prayer and fellowship' },
+    { id: 10, title: 'Baptism Class', date: '2026-03-10', time: '7:00 PM', description: 'Preparation for Baptism' }
+  ];
+  res.json(upcomingEvents);
 });
 
 // Health check
