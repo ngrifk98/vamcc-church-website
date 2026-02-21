@@ -552,7 +552,7 @@ function ChatbotMemberRegistration({ setPage, setUpdateMemberID, setDuplicateMem
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/api/members/register", {
+      const response = await fetch("http://localhost:8080/api/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -563,7 +563,8 @@ function ChatbotMemberRegistration({ setPage, setUpdateMemberID, setDuplicateMem
         setDuplicateMemberID(data.memberID);
         setError(data.error);
         // Fetch the full member data for update form
-        const memberResponse = await fetch(`http://localhost:4000/api/members/by-phone?countryCode=${encodeURIComponent(form.countryCode)}&phoneNumber=${encodeURIComponent(form.phoneNumber)}`);
+        const phoneNumber = form.countryCode + form.phoneNumber;
+        const memberResponse = await fetch(`http://localhost:8080/api/members/phone/${encodeURIComponent(phoneNumber)}`);
         if (memberResponse.ok) {
           const memberData = await memberResponse.json();
           setDuplicateMemberData(memberData);
@@ -655,7 +656,7 @@ function UpdateMemberForm({ memberID, memberData, setPage }) {
     }
     setSaving(true); setError("");
     try {
-      const response = await fetch(`http://localhost:4000/api/members/${form.memberid}`, {
+      const response = await fetch(`http://localhost:8080/api/members/${form.memberid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -719,7 +720,7 @@ function ChatbotEvents({ setPage }) {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:4000/api/events");
+        const response = await fetch("http://localhost:8080/api/events");
         if (response.ok) {
           setEvents(await response.json());
         } else {
