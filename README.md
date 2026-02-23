@@ -1,6 +1,6 @@
 # VAMCC Church Website
 
-A modern Progressive Web App (PWA) for VAMCC - a Tamil American Catholic community. Built with React, Node.js, and PostgreSQL.
+A modern Progressive Web App (PWA) for VAMCC - a Tamil American Catholic community. Built with React, Spring Boot, and PostgreSQL.
 
 ## Features
 
@@ -11,10 +11,10 @@ A modern Progressive Web App (PWA) for VAMCC - a Tamil American Catholic communi
 - Responsive design optimized for mobile
 
 👥 **Member Portal**
-- User registration and authentication
+- User registration and member management
 - Member profile management
-- Login/logout functionality
-- JWT-based security
+- Secure database storage
+- Duplicate member detection
 
 📱 **Responsive Design**
 - Mobile-first approach
@@ -73,11 +73,13 @@ Chatbot showing list of 10 upcoming church events with dates, times, and descrip
 - **PWA Manifest** - App configuration
 
 ### Backend
-- **Node.js + Express.js** - REST API server
+- **Spring Boot 3.2** - REST API framework
+- **Java 17** - Programming language
+- **Spring Data JPA** - Database access layer
 - **PostgreSQL** - Database
-- **JWT** - Authentication
-- **Bcrypt** - Password hashing
-- **CORS** - Cross-origin requests
+- **Maven** - Build tool
+- **Lombok** - Boilerplate reduction
+- **CORS** - Cross-origin support
 
 ## Project Structure
 
@@ -94,10 +96,18 @@ church-website/
 │   │   └── index.js            # React entry point
 │   └── package.json
 │
-├── backend/
-│   ├── server.js               # Express server
-│   ├── .env                    # Environment variables
-│   └── package.json
+├── spring-api/
+│   ├── src/main/
+│   │   ├── java/com/vamcc/church/
+│   │   │   ├── ChurchApiApplication.java   # Spring Boot entry point
+│   │   │   ├── controller/                 # REST endpoints
+│   │   │   ├── service/                    # Business logic
+│   │   │   ├── repository/                 # Database access (JPA)
+│   │   │   └── model/                      # Entity models
+│   │   └── resources/
+│   │       └── application.properties       # Spring Boot config
+│   ├── pom.xml                   # Maven configuration
+│   └── README.md
 │
 └── README.md
 ```
@@ -105,29 +115,27 @@ church-website/
 ## Getting Started
 
 ### Prerequisites
-- Node.js 16+ and npm
-- PostgreSQL 12+
-- Git
+- **Java 17+** - For Spring Boot
+- **Node.js 16+** and npm - For React frontend
+- **PostgreSQL 12+** - Database
+- **Git** - Version control
+- **Maven 3.8+** - Build tool (or use Maven wrapper)
 
 ### Local Development
 
-**1. Setup Backend**
+**1. Setup Spring Boot Backend**
 ```bash
-cd backend
-npm install
-# Create .env file with your database credentials
-# DB_HOST=localhost
-# DB_PORT=5432
-# DB_NAME=church_db
-# DB_USER=postgres
-# DB_PASSWORD=yourpassword
-# JWT_SECRET=your_secret_key
-npm start
+cd spring-api
+# Update database credentials in src/main/resources/application.properties
+spring.datasource.password=your_postgres_password
+# Build and run
+./mvnw clean install
+./mvnw spring-boot:run
 ```
 
-Backend runs on `http://localhost:4000`
+Backend runs on `http://localhost:8080/api`
 
-**2. Setup Frontend**
+**2. Setup React Frontend**
 ```bash
 cd frontend
 npm install
@@ -141,7 +149,7 @@ Frontend runs on `http://localhost:3000`
 createdb church_db
 ```
 
-The backend will auto-create tables on first run.
+The Spring Boot API will auto-create the `members` table on first run via Hibernate.
 
 ## Deployment
 
@@ -155,16 +163,25 @@ npm run deploy
 
 Deployed at: `https://ngrifk98.github.io/vamcc-church-website/`
 
-### Backend Deployment (Railway)
+### Backend Deployment (Spring Boot on Cloud Platform)
 
+**Option 1: Railway (Recommended)**
 1. Go to [railway.app](https://railway.app)
 2. Connect GitHub repository
-3. Add PostgreSQL database
-4. Set environment variables:
-   - `NODE_ENV=production`
-   - `JWT_SECRET=your_secret_key`
-   - `FRONTEND_URL=https://your-frontend-url`
+3. Add PostgreSQL database service
+4. Set environment variables in `application.properties`:
+   - `spring.datasource.url=jdbc:postgresql://your-rails-db-url`
+   - `spring.datasource.password=your_db_password`
 5. Deploy
+
+**Option 2: Docker Containerization**
+```bash
+# Build JAR
+cd spring-api
+./mvnw clean package
+
+# Create Dockerfile and deploy to any cloud platform
+```
 
 ### Domain Configuration
 
@@ -174,41 +191,48 @@ Deployed at: `https://ngrifk98.github.io/vamcc-church-website/`
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - Register new member
-- `POST /api/auth/login` - Login member
-
-### Member Profile
-- `GET /api/members/me` - Get current member profile
-- `PUT /api/members/:id` - Update member profile
-- `GET /api/members` - List all members (admin only)
-
-### Member Registration Chatbot *(New)*
-- `POST /api/members/register` - Register new member via chatbot with duplicate detection
-- `GET /api/members/by-phone` - Get member by country code + phone number
-- `PUT /api/members/:memberID` - Update existing member record
-- `GET /api/events` - Get upcoming church events (10 max)
+### Member Management
+- `POST /api/members` - Add new member
+- `GET /api/members` - List all members
+- `GET /api/members/{id}` - Get member by ID
+- `GET /api/members/email/{email}` - Get member by email
+- `GET /api/members/phone/{phone}` - Get member by phone
+- `GET /api/members?search={query}` - Search members by email, phone, or name
+- `PUT /api/members/{id}` - Update member
+- `DELETE /api/members/{id}` - Delete member
 
 ### Health Check
-- `GET /api/health` - Server health status
+- `GET /api/members/health` - Server health status
+
+### Base URL
+- **Development:** `http://localhost:8080/api`
+- **Production:** `https://your-deployed-url/api`
 
 ## Environment Variables
 
-### Backend (.env)
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=church_db
-DB_USER=postgres
-DB_PASSWORD=yourpassword
-JWT_SECRET=your_super_secret_key
-PORT=4000
-FRONTEND_URL=http://localhost:3000
+### Spring Boot Backend (application.properties)
+Located in `spring-api/src/main/resources/application.properties`
+
+```properties
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/church_db
+spring.datasource.username=postgres
+spring.datasource.password=your_postgres_password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Server Configuration
+server.port=8080
+server.servlet.context-path=/api
+
+# JPA/Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 ```
 
-### Frontend (.env.production)
+### Frontend (.env)
 ```
-REACT_APP_API_URL=https://your-railway-backend-url.railway.app
+REACT_APP_API_URL=http://localhost:8080/api
 ```
 
 ## Features & Pages
@@ -282,14 +306,22 @@ Then visit `http://localhost:3000` and test:
 - Clear site data
 
 **API not connecting?**
-- Verify backend is running
-- Check CORS settings in backend
-- Update `REACT_APP_API_URL` in .env
+- Verify Spring Boot API is running: `http://localhost:8080/api/members/health`
+- Check CORS settings in `MemberController.java`
+- Ensure Java 17+ is installed: `java -version`
+- Check database credentials in `application.properties`
 
 **PostgreSQL connection error?**
 - Ensure PostgreSQL is running
-- Check DB credentials in .env
-- Database should be pre-created
+- Check DB credentials in `application.properties`
+- Database should be pre-created: `createdb church_db`
+- Use pgAdmin to verify connection
+
+**Spring Boot build fails?**
+- Ensure Java 17+ is installed: `java -version`
+- Check Maven version: `mvn -v` (or use Maven wrapper `./mvnw`)
+- Run `./mvnw clean install` to rebuild from scratch
+- Check Lombok compatibility (should be 1.18.30+)
 
 ## Contributing
 
@@ -306,6 +338,21 @@ This project is for VAMCC. All rights reserved.
 ## Contact
 
 For questions or support, reach out to the development team.
+
+---
+
+## Spring Boot API Documentation
+
+For detailed API documentation, request specifications, and integration examples, see [spring-api/README.md](./spring-api/README.md).
+
+### Quick Start with Spring Boot
+```bash
+cd spring-api
+./mvnw clean install        # Build the project
+./mvnw spring-boot:run      # Start the API on port 8080
+```
+
+The API will auto-create the PostgreSQL schema and is ready to accept member registration requests.
 
 ---
 
